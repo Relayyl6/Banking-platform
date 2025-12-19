@@ -41,6 +41,7 @@ const Sidebar = ({
                     width={22}
                     height={22}
                     fill
+                    className={cn({ 'brightness-[3]! invert-0': isActive })}
                   />
                 </div>
                 {label}
