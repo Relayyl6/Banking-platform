@@ -148,6 +148,14 @@
   .profile-img {
     @apply flex items-center justify-center absolute -top-8 size-24 rounded-full bg-gray-100 border-8 border-white p-2! shadow-profile;
   }
+
+  .bank-card {
+    @apply relative flex h-[190px] w-full max-w-[320px] justify-between rounded-[20px] border border-white bg-black shadow-credit-card backdrop-blur-[6px]
+  }
+
+  .bank-card-content {
+    @apply relative
+  }
 }
 
 

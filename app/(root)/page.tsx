@@ -29,7 +29,11 @@ const Home = () => {
       </div>
 
       {/* // right sidebar */}
-      <RightSidebar user={user} transactions={[]} banks={[]} />
+      <RightSidebar
+        user={user}
+        transactions={[]}
+        banks={[{}, {}]}
+      />
     </main>
   )
 }
