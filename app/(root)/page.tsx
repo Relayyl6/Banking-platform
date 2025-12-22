@@ -19,11 +19,32 @@ const Home = () => {
           user={user?.firstName || "guest"}
         />
 
-        <TotalBalanceBox
-          accounts={[]}
-          totalBanks={1}
-          totalCurrentBalance={1268.38}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <TotalBalanceBox
+            accounts={[]}
+            totalBanks={1}
+            totalCurrentBalance={1268.38}
+          />
+
+          <TotalBalanceBox
+            accounts={[]}
+            totalBanks={1}
+            totalCurrentBalance={1268.38}
+          />
+
+          <TotalBalanceBox
+            accounts={[]}
+            totalBanks={1}
+            totalCurrentBalance={1268.38}
+          />
+
+          <TotalBalanceBox
+            accounts={[]}
+            totalBanks={1}
+            totalCurrentBalance={1268.38}
+          />
+        </div>
+
 
 
       </div>
@@ -32,7 +53,10 @@ const Home = () => {
       <RightSidebar
         user={user}
         transactions={[]}
-        banks={[{}, {}]}
+        banks={[
+          {currentBalance: 123.58, mask: "12 3432" },
+          {currentBalance: 1492.58, mask: "23 2343"}
+        ]}
       />
     </main>
   )

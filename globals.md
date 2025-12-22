@@ -322,7 +322,7 @@
 
   .payment-transfer_btn {
     @apply text-14 w-full bg-bank-gradient font-semibold text-white shadow-form !important;
-  }
+  }cl
 
   /* Root Layout */
   .root-layout {

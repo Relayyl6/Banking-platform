@@ -19,7 +19,7 @@ const RightSidebar = ({
             </span>
           </div>
           <div className="lex flex-col pt-24!">
-            <h1 className="text-24 font-semibold">
+            <h1 className="text-24 font-semibold tracking-wide">
               {user.firstName} {user.lastName}
             </h1>
             <p className="text-16 font-normal text-gray-600">
