@@ -2,6 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import BankCard from './BankCard'
+import { HoverCardDemo } from './HoverCard'
+
 
 const RightSidebar = ({
   user,
@@ -14,9 +16,7 @@ const RightSidebar = ({
         <div className="h-[120px] w-full bg-gradient-mesh bg-cover bg-no-repeat" />
         <div className="relative px-6! flex max-xl:justify-center">
           <div className="profile-img">
-            <span className='text-5xl font-bold text-neutral-900'>
-              {user?.firstName[0]}
-            </span>
+            <HoverCardDemo button={user?.firstName[0]}/>
           </div>
           <div className="lex flex-col pt-24!">
             <h1 className="text-24 font-semibold tracking-wide">
