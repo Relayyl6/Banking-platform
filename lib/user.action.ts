@@ -8,6 +8,12 @@ import {
 import { doc, setDoc, getDoc } from "firebase/firestore"
 // import { db } from "@/lib/firebase"
 import { auth, db } from "@/config/env";
+import { createSession } from "@/components/SetCookie";
+import { parseStringify } from "./utils";
+import { cookies } from "next/headers";
+import { adminAuth } from "@/config/firebaseAdmin";
+// import { adminAuth } from "@/lib/firebaseAdmin";
+
 
 export const SignIn = async (data: { email: string, password: string     }) => {
     try {
@@ -44,14 +50,22 @@ export const SignUp = async (userData: SignUpParams) => {
             createdAt: new Date(),
         });
 
-        return user;
+        const idToken = await user.getIdToken();
 
-    } catch (error: any) {
-        console.error("[SignUp] ❌ Error occurred");
+        await createSession(idToken)
+
+        return parseStringify(user);
+
+    } catch (error: unknown) {
+        console.error("[SignUp] ❌ Unknown Error occurred", error);
+
+        let message;
+        if (error instanceof Error) {
+            message = error?.message
+        }
 
         // Firebase-specific error info
-        console.error("[SignUp] Error message:", error?.message);
-        console.error("[SignUp] Error code:", error?.code);
+        console.error("[SignUp] Error message:", message);
         console.error("[SignUp] Full error object:", error);
 
         throw error; // IMPORTANT: rethrow so caller knows it failed
@@ -68,4 +82,19 @@ export const getUserProfile = async (uid: string) => {
 
 export const logout = async () => {
   await signOut(auth)
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
+}
+
+export async function getServerUser() {
+  const cookieStore = await cookies()
+  const session = cookieStore.get("session")?.value;
+  if (!session) return null;
+
+  try {
+    const decoded = await adminAuth.verifySessionCookie(session, true);
+    return decoded; // uid, email, claims
+  } catch {
+    return null;
+  }
 }

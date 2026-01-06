@@ -16,7 +16,7 @@ const RightSidebar = ({
         <div className="h-[120px] w-full bg-gradient-mesh bg-cover bg-no-repeat" />
         <div className="relative px-6! flex max-xl:justify-center">
           <div className="profile-img">
-            <HoverCardDemo button={user?.firstName[0]}/>
+            <HoverCardDemo button={user?.firstName[0]} />
           </div>
           <div className="lex flex-col pt-24!">
             <h1 className="text-24 font-semibold tracking-wide">

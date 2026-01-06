@@ -11,7 +11,7 @@ import CustomInputForm from './FormField'
 import { Form } from './ui/form'
 import { Loader2 } from 'lucide-react'
 import { formSchema } from '@/types/auth.schema'
-import { useRouter } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import { SignIn, SignUp } from '@/lib/user.action'
 
 const AuthForm = ({
@@ -51,7 +51,7 @@ const AuthForm = ({
             if (type === "sign-up") {
                 const newUser: User = await SignUp(data);
                 setUser(newUser)
-                console.log("user saved to db",newUser);
+                redirect("/sign-in")
             } else if (type === "sign-in") {
                 const response = await SignIn({
                     email: data.email,
@@ -77,7 +77,7 @@ const AuthForm = ({
                     className="size-6 max-xl:size-14"
                 />
                 <h1 className="font-ibm text-26 font-bold text-black-1">
-                  Bevel Finance
+                    Bevel Finance
                 </h1>
             </Link>
 
