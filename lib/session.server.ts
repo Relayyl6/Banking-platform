@@ -1,14 +1,14 @@
 "use server";
+import "server-only";
 
 import { adminAuth } from "@/config/firebaseAdmin";
 import { cookies } from "next/headers";
-// import { adminAuth } from "@/lib/firebaseAdmin";
 
-export async function createSession(idToken: string) {
+export async function createSessionFromToken(idToken: string) {
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
   const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-    expiresIn
+    expiresIn,
   });
 
   const cookieStore = await cookies()

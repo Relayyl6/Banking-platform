@@ -11,8 +11,11 @@ import CustomInputForm from './FormField'
 import { Form } from './ui/form'
 import { Loader2 } from 'lucide-react'
 import { formSchema } from '@/types/auth.schema'
-import { redirect, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { SignIn, SignUp } from '@/lib/user.action'
+import { getFirebaseErrorMessage } from '@/lib/firebaseError'
+import { FirebaseError } from "firebase/app";
+import { createSessionFromToken } from "@/lib/session.server";
 
 const AuthForm = ({
     type
@@ -21,6 +24,7 @@ const AuthForm = ({
 }) => {
     const [ user, setUser ] = useState<User | null>(null);
     const [ isLoading, setIsLoading ] = useState(false);
+    const [ error, setError ] = useState("")
     const router = useRouter();
 
     const authFormSchema = formSchema(type);
@@ -49,20 +53,31 @@ const AuthForm = ({
         try {
             //sign up with firebase and create a new laid Link
             if (type === "sign-up") {
-                const newUser: User = await SignUp(data);
-                setUser(newUser)
-                redirect("/sign-in")
+                const { user, idToken } = await SignUp(data);
+
+                await createSessionFromToken(idToken);
+
+                setUser(user)
             } else if (type === "sign-in") {
-                const response = await SignIn({
+                const { idToken } = await SignIn({
                     email: data.email,
                     password: data.password
                 });
-                if (response) router.push("/")
+                await createSessionFromToken(idToken);
+
+                router.push("/")
             }
-            console.log(data)
+            // console.log(data)
             setIsLoading(false)
         } catch (error) {
-            console.error("An error occured: ", error)
+            if (error instanceof FirebaseError) {
+                const errorMessage = error?.code && getFirebaseErrorMessage(error.code)
+                setError(errorMessage)
+            }
+            console.error("Internal server error. Please try again later.", error)
+            setError("Internal server error. Please try again later.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -85,7 +100,7 @@ const AuthForm = ({
                 <h1 className="text-24 font-semibold -tracking-normal text-gray-900 ">
                     {user ? 'Link Account': type === "sign-in" ? 'Sign In' : 'Sign Up' }
                     <p className="text-16 font-normal text-gray-600">
-                        {user ? 'Link your account to get started' : 'please enter your details'}
+                        {user ? 'Link your account to get started' : 'Please enter your details'}
                     </p>
                 </h1>
             </div>
@@ -165,14 +180,6 @@ const AuthForm = ({
                             </div>
                         </>
                     )}
-
-                    {
-                        type === "sign-up" && (
-                            <div className="flex">
-
-                            </div>
-                        )
-                    }
                     <div>
                         <CustomInputForm
                             form={form}
@@ -198,7 +205,12 @@ const AuthForm = ({
                             ): type === "sign-in" ? "Sign In" : "Sign Up"}
                         </Button>
                         
-                        <footer className="flex justify-center gap-1">
+                        <footer className="flex flex-col justify-center gap-1">
+                            {
+                                error && (
+                                    <p className="font-mono text-[10px] flex items-center justify-center text-red-600">{error}</p>
+                                )
+                            }
                             <p className="text-14 font-normal text-gray-600">
                                 {
                                     type === "sign-in" ? "Don't have an account?" : "Already have an account?"

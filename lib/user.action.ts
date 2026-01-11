@@ -1,19 +1,13 @@
 "use client"
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth"
-// import { auth } from "@/lib/firebase"
-import { doc, setDoc, getDoc } from "firebase/firestore"
-// import { db } from "@/lib/firebase"
+import { doc, setDoc } from "firebase/firestore"
 import { auth, db } from "@/config/env";
-import { createSession } from "@/components/SetCookie";
 import { parseStringify } from "./utils";
-import { cookies } from "next/headers";
-import { adminAuth } from "@/config/firebaseAdmin";
-// import { adminAuth } from "@/lib/firebaseAdmin";
-
 
 export const SignIn = async (data: { email: string, password: string     }) => {
     try {
@@ -23,9 +17,15 @@ export const SignIn = async (data: { email: string, password: string     }) => {
             data.password
         )
 
-        return userCredential.user
+        const idToken = await userCredential.user.getIdToken();
+
+        return {
+            user: parseStringify(userCredential.user),
+            idToken,
+        };
     } catch (error) {
         console.error("Error signing in:", error);
+        throw error
     }
 }
 
@@ -52,10 +52,10 @@ export const SignUp = async (userData: SignUpParams) => {
 
         const idToken = await user.getIdToken();
 
-        await createSession(idToken)
-
-        return parseStringify(user);
-
+        return {
+            user: parseStringify(user),
+            idToken
+        };
     } catch (error: unknown) {
         console.error("[SignUp] ❌ Unknown Error occurred", error);
 
@@ -72,29 +72,6 @@ export const SignUp = async (userData: SignUpParams) => {
     }
 };
 
-
-export const getUserProfile = async (uid: string) => {
-  const snap = await getDoc(doc(db, "user", uid))
-
-  if (!snap.exists()) return null
-  return snap.data()
-}
-
-export const logout = async () => {
+export const logOutClient = async () => {
   await signOut(auth)
-  const cookieStore = await cookies();
-  cookieStore.delete("session");
-}
-
-export async function getServerUser() {
-  const cookieStore = await cookies()
-  const session = cookieStore.get("session")?.value;
-  if (!session) return null;
-
-  try {
-    const decoded = await adminAuth.verifySessionCookie(session, true);
-    return decoded; // uid, email, claims
-  } catch {
-    return null;
-  }
 }
