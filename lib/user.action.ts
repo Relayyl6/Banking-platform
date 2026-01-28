@@ -8,6 +8,8 @@ import {
 import { doc, setDoc } from "firebase/firestore"
 import { auth, db } from "@/config/env";
 import { parseStringify } from "./utils";
+import { clearSession } from "./auth";
+// import { cookies } from "next/headers";
 
 export const SignIn = async (data: { email: string, password: string     }) => {
     try {
@@ -73,5 +75,11 @@ export const SignUp = async (userData: SignUpParams) => {
 };
 
 export const logOutClient = async () => {
-  await signOut(auth)
+  try {
+    await signOut(auth)
+    await clearSession()
+  } catch (error) {
+    console.error("Error signing out:", error);
+    throw error; // or handle properly
+  }
 }

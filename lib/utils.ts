@@ -7,6 +7,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function convertTimestamps(obj: any): any {
+  if (!obj || typeof obj !== "object") return obj;
+
+  if (obj._seconds !== undefined && obj._nanoseconds !== undefined) {
+    return new Date(obj._seconds * 1000 + obj._nanoseconds / 1000000).toISOString();
+  }
+
+  const newObj: any = Array.isArray(obj) ? [] : {};
+  for (const key in obj) {
+    newObj[key] = convertTimestamps(obj[key]);
+  }
+  return newObj;
+}
+
 // FORMAT DATE TIME
 export const formatDateTime = (dateString: Date) => {
   const dateTimeOptions: Intl.DateTimeFormatOptions = {

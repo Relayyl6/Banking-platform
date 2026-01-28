@@ -23,6 +23,11 @@ export async function createSession(idToken: string) {
   });
 }
 
+export const clearSession = async () => {
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
+}
+
 export const logout = async () => {
   const cookieStore = await cookies();
   cookieStore.delete("session");

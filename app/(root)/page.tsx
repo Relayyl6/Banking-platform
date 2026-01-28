@@ -3,6 +3,7 @@ import TotalBalanceBox from '@/components/TotalBalanceBox'
 import React from 'react'
 import RightSidebar from '@/components/Rightsidebar'
 import { getLoggedInUser } from '@/lib/user.server'
+import Transactions from '@/components/transactions'
 // import { getServerUser, getUserProfile } from '@/lib/auth'
 // import { loggedInUser } from '@/components/User'
 // import { loggedInUser } from '@/components/User'
@@ -24,13 +25,7 @@ const Home = async () => {
           user={loggedInUser?.firstName || "guest"}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <TotalBalanceBox
-            accounts={[]}
-            totalBanks={1}
-            totalCurrentBalance={1268.38}
-          />
-
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-5">
           <TotalBalanceBox
             accounts={[]}
             totalBanks={1}
@@ -50,9 +45,9 @@ const Home = async () => {
           />
         </div>
 
-
-
+        <Transactions />
       </div>
+      
 
       {/* // right sidebar */}
       <RightSidebar

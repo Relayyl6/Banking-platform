@@ -20,10 +20,10 @@ const RightSidebar = ({
           </div>
           <div className="flex flex-col pt-24!">
             <h1 className="text-24 font-semibold tracking-wide">
-              {user.firstName} {user.lastName}
+              {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-16 font-normal text-gray-600">
-              {user.email}
+              {user?.email}
             </p>
           </div>
         </div>
@@ -54,7 +54,7 @@ const RightSidebar = ({
                 <BankCard
                   key={banks[0]?.id}
                   account={banks[0]}
-                  userName={`${user.firstName} ${user.lastName}`}
+                  userName={`${user?.firstName} ${user?.lastName}`}
                   showBalance={false}
                 />
               </div>
@@ -64,7 +64,7 @@ const RightSidebar = ({
                     <BankCard
                       key={banks[1]?.id}
                       account={banks[1]}
-                      userName={`${user.firstName} ${user.lastName}`}
+                      userName={`${user?.firstName} ${user?.lastName}`}
                       showBalance={false}
                     />
                   </div>
