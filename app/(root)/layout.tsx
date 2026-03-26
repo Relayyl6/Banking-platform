@@ -4,6 +4,7 @@ import Image from 'next/image'
 import MobileNavbar from '@/components/MobileNavbar'
 import { getLoggedInUser } from '@/lib/user.server'
 import { convertTimestamps } from '@/lib/utils'
+import { redirect } from 'next/navigation'
 
 export default async function Layout({
   children
@@ -12,6 +13,7 @@ export default async function Layout({
 }>) {
   const loggedIn = convertTimestamps(await getLoggedInUser());
 
+  if (!loggedIn) redirect("/sign-in")
   return (
     <main className="flex h-screen w-full font-inter">
       <Sidebar user={loggedIn} />
@@ -30,7 +32,7 @@ export default async function Layout({
         </div>
         {children}
       </div>
-    </main>
+    </main> 
   )
 }
 

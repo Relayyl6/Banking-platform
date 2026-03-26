@@ -28,10 +28,10 @@ export const clearSession = async () => {
   cookieStore.delete("session");
 }
 
-export const logout = async () => {
-  const cookieStore = await cookies();
-  cookieStore.delete("session");
-}
+// export const logout = async () => {
+//   const cookieStore = await cookies();
+//   cookieStore.delete("session");
+// }
 
 export async function getServerUser() {
   const cookieStore = await cookies()

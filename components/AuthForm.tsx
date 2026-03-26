@@ -48,22 +48,60 @@ const AuthForm = ({
       // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof authFormSchema>) => {
         // Do something with the form data.
-        // ✅ This will be type-safe and validated.
+        // This will be type-safe and validated.
         setIsLoading(true)
         try {
             //sign up with firebase and create a new laid Link
             if (type === "sign-up") {
-                const { user, idToken } = await SignUp(data);
+                const { user, idToken, error } = await SignUp(data);
+                    if (error) {
+                        setError(error)
+                        return
+                    }
 
-                await createSessionFromToken(idToken);
+                // Send ID token to server API to create session cookie
+                const res = await fetch("/api/session", {
+                  method: "POST",
+                  body: JSON.stringify({ idToken }),
+                  headers: { "Content-Type": "application/json" },
+                });
+            
+                if (!res.ok) {
+                  const { error } = await res.json();
+                  setError(error || "Failed to create session");
+                  return;
+                }
 
                 setUser(user)
             } else if (type === "sign-in") {
-                const { idToken } = await SignIn({
+                const { idToken, error  } = await SignIn({
                     email: data.email,
                     password: data.password
                 });
-                await createSessionFromToken(idToken);
+
+                if (error) {
+                  setError(error);
+                  return;
+                }
+            
+                const res = await fetch("/api/session", {
+                  method: "POST",
+                  body: JSON.stringify({ idToken }),
+                  headers: { "Content-Type": "application/json" },
+                });
+            
+                let sessionData: { error?: string } = {};
+                try {
+                  sessionData = await res.json();
+                } catch (err) {
+                  console.error("Failed to parse JSON from session API:", err);
+                }
+
+                if (!res.ok) {
+                  setError(sessionData.error || "Failed to create session");
+                    console.log(sessionData.error)
+                  return;
+                }
 
                 router.push("/")
             }
@@ -75,7 +113,6 @@ const AuthForm = ({
                 setError(errorMessage)
             }
             console.error("Internal server error. Please try again later.", error)
-            setError("Internal server error. Please try again later.")
         } finally {
             setIsLoading(false)
         }

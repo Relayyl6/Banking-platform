@@ -9,9 +9,9 @@ import { doc, setDoc } from "firebase/firestore"
 import { auth, db } from "@/config/env";
 import { parseStringify } from "./utils";
 import { clearSession } from "./auth";
-// import { cookies } from "next/headers";
+import { FirebaseError } from "firebase/app";
 
-export const SignIn = async (data: { email: string, password: string     }) => {
+export const SignIn = async (data: { email: string, password: string }) => {
     try {
         const userCredential = await signInWithEmailAndPassword(
             auth,
@@ -19,15 +19,27 @@ export const SignIn = async (data: { email: string, password: string     }) => {
             data.password
         )
 
-        const idToken = await userCredential.user.getIdToken();
+        const idToken = await userCredential.user.getIdToken(true);
 
         return {
             user: parseStringify(userCredential.user),
             idToken,
         };
     } catch (error) {
-        console.error("Error signing in:", error);
-        throw error
+        if (error instanceof FirebaseError) {
+          switch (error.code) {
+            case "auth/user-not-found":
+              return { error: "No account found with this email." };
+            case "auth/wrong-password":
+              return { error: "Incorrect password." };
+            case "auth/invalid-email":
+              return { error: "The email address is invalid." };
+            default:
+              return { error: "An unexpected error occurred. Please try again." };
+          }
+        }
+
+        return { error: "An unknown error occurred." };
     }
 }
 
@@ -52,25 +64,28 @@ export const SignUp = async (userData: SignUpParams) => {
             createdAt: new Date(),
         });
 
-        const idToken = await user.getIdToken();
+        const idToken = await user.getIdToken(true);
 
         return {
             user: parseStringify(user),
             idToken
         };
     } catch (error: unknown) {
-        console.error("[SignUp] ❌ Unknown Error occurred", error);
-
-        let message;
-        if (error instanceof Error) {
-            message = error?.message
+        if (error instanceof FirebaseError) {
+          switch (error.code) {
+            case "auth/email-already-in-use":
+              return { error: "This email is already registered. Please sign in." };
+            case "auth/invalid-email":
+              return { error: "The email address is invalid." };
+            case "auth/weak-password":
+              return { error: "Password should be at least 6 characters." };
+            default:
+              return { error: "An unexpected error occurred. Please try again." };
+          }
         }
 
-        // Firebase-specific error info
-        console.error("[SignUp] Error message:", message);
-        console.error("[SignUp] Full error object:", error);
-
-        throw error; // IMPORTANT: rethrow so caller knows it failed
+        // fallback for non-Firebase errors
+        return { error: "An unknown error occurred." };
     }
 };
 
@@ -78,8 +93,9 @@ export const logOutClient = async () => {
   try {
     await signOut(auth)
     await clearSession()
+    return true
   } catch (error) {
     console.error("Error signing out:", error);
-    throw error; // or handle properly
+    return false   
   }
 }
