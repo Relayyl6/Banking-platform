@@ -12,10 +12,11 @@ import { Form } from './ui/form'
 import { Loader2 } from 'lucide-react'
 import { formSchema } from '@/types/auth.schema'
 import { useRouter } from 'next/navigation'
-import { SignIn, SignUp } from '@/lib/user.action'
+import { SignIn, SignInWithGoogle, SignUp } from '@/lib/user.action'
 import { getFirebaseErrorMessage } from '@/lib/firebaseError'
 import { FirebaseError } from "firebase/app";
 import { createSessionFromToken } from "@/lib/session.server";
+import PlaidLink from './PlaidLink'
 
 const AuthForm = ({
     type
@@ -28,6 +29,7 @@ const AuthForm = ({
     const router = useRouter();
 
     const authFormSchema = formSchema(type);
+    console.log(user)
 
     const form = useForm<z.infer<typeof authFormSchema>>({
         resolver: zodResolver(authFormSchema),
@@ -45,6 +47,44 @@ const AuthForm = ({
         },
     })
 
+    const handleGoogleSignIn = async () => {
+        setIsLoading(true);
+
+        try {
+            const { user, idToken, error } = await SignInWithGoogle();
+
+            if (error) {
+                setError(error)
+                return
+            }
+
+            const res = await fetch("/api/session", {
+                method: "POST",
+                body: JSON.stringify({ idToken }),
+                headers: { "Content-Type": "application/json" }
+            })
+
+            if (!res.ok) {
+                const { error } = await res.json();
+                setError(error || "Failed to create session");
+                return;
+            }
+
+            // Check if user has Dwolla data; if not, redirect to profile completion
+            if (!user?.dwollaCustomerId) {
+                router.push('/complete-profile'); // Create this page to collect missing info
+                return;
+            }
+
+            setUser(user)
+        } catch (error) {
+            console.error("Google Sign-in Error", error)
+            setError("An unexpected error occured")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
       // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof authFormSchema>) => {
         // Do something with the form data.
@@ -53,12 +93,16 @@ const AuthForm = ({
         try {
             //sign up with firebase and create a new laid Link
             if (type === "sign-up") {
+                console.log("[AuthForm] Calling SignUp...");
                 const { user, idToken, error } = await SignUp(data);
+                console.log("[AuthForm] SignUp result - error:", error, "idToken present:", !!idToken);
                     if (error) {
                         setError(error)
+                        console.log("[AuthForm] SignUp failed, not calling session");
                         return
                     }
 
+                console.log("[AuthForm] SignUp success, calling /api/session");
                 // Send ID token to server API to create session cookie
                 const res = await fetch("/api/session", {
                   method: "POST",
@@ -69,9 +113,11 @@ const AuthForm = ({
                 if (!res.ok) {
                   const { error } = await res.json();
                   setError(error || "Failed to create session");
+                  console.log("[AuthForm] Session creation failed:", error);
                   return;
                 }
 
+                console.log("[AuthForm] Session created successfully");
                 setUser(user)
             } else if (type === "sign-in") {
                 const { idToken, error  } = await SignIn({
@@ -145,9 +191,9 @@ const AuthForm = ({
 
         {user ? (
             <div className="flex flex-col gap-4">
-                {/* <PlaidLink /> */}
+                <PlaidLink user={user} variant="primary" />
             </div>
-        ): (
+        ) : (
             <>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="gap-5!">
@@ -241,27 +287,45 @@ const AuthForm = ({
                                 </>
                             ): type === "sign-in" ? "Sign In" : "Sign Up"}
                         </Button>
-                        
-                        <footer className="flex flex-col justify-center gap-1">
-                            {
-                                error && (
-                                    <p className="font-mono text-[10px] flex items-center justify-center text-red-600">{error}</p>
-                                )
-                            }
-                            <p className="text-14 font-normal text-gray-600">
-                                {
-                                    type === "sign-in" ? "Don't have an account?" : "Already have an account?"
-                                }&nbsp;
-                                <Link href={type==="sign-in" ? "/sign-up" : "/sign-in"} className="text-bank-gradient text-14 cursor-pointer font-medium">
-                                    {
-                                        type === "sign-in" ? "Sign up" : "sign in"
-                                    }
-                                </Link>
-                            </p>
-                        </footer>
                     </div>
                   </form>
                 </Form>
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gray-200" />
+                        <span className="text-14 text-gray-500 font-medium">OR</span>
+                        <div className="h-px flex-1 bg-gray-200" />
+                    </div>
+                    <Button className="px-2! text-16 rounded-lg border border-bank-gradient bg-bank-gradient font-Semibold text-white shadow-form" onClick={handleGoogleSignIn}>
+                        Continue with 
+                        <Image
+                            src={"/google-color-svgrepo-com.svg"}
+                            alt="Google"
+                            width={20}
+                            height={20}
+                        />  
+                    </Button>
+                    
+                    <footer className="flex flex-col justify-center gap-1">
+                        {
+                            error && (
+                                <p className="font-mono text-[10px] flex items-center justify-center text-red-600">{error}</p>
+                            )
+                        }
+                        <p className="text-14 font-normal text-gray-600">
+                            {
+                                type === "sign-in" ? "Don't have an account?" : "Already have an account?"
+                            }&nbsp;
+                            <Link href={type==="sign-in" ? "/sign-up" : "/sign-in"} className="text-bank-gradient text-14 cursor-pointer font-medium">
+                                {
+                                    type === "sign-in" ? "Sign up" : "sign in"
+                                }
+                            </Link>
+                        </p>
+                        
+                        
+                    </footer>
+                </div>
             </>
         )}
     </section>

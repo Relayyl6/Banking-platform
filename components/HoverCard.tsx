@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/hover-card"
 
 export function HoverCardDemo({
-    button
+    button,
+    firstName
 }: {
-    button: string
+    button: string,
+    firstName: string
 }) {
   return (
     <HoverCard>
@@ -32,7 +34,7 @@ export function HoverCardDemo({
             <AvatarFallback>VC</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
-            <h4 className="text-sm font-semibold">@nextjs</h4>
+            <h4 className="text-sm font-semibold">{firstName}</h4>
             <p className="text-sm">
               The user currently logged in, additional info that can be dsplayed as he/she hover the dp
             </p>
