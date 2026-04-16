@@ -8,14 +8,14 @@ declare type SearchParamProps = {
 // ========================================
 
 declare type SignUpParams = {
-  firstName: string | undefined;
-  lastName: string | undefined;
-  address: string | undefined;
-  city: string | undefined;
-  state: string | undefined;
-  postalCode: string | undefined;
-  dateofbirth: string | undefined;
-  SSN: string | undefined;
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  dateofbirth: string;
+  SSN: string;
   email: string;
   password: string;
 };
@@ -124,8 +124,8 @@ declare type AddFundingSourceParams = {
 };
 
 declare type NewDwollaCustomerParams = {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   type: string;
   address1: string;

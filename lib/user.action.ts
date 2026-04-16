@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth"
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc, updateDoc } from "firebase/firestore"
 import { auth, db } from "@/config/env";
 import { encryptId, extractCustomerIdFromUrl, parseStringify } from "./utils";
 import { clearSession } from "./auth";
@@ -16,9 +16,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { revalidatePath } from "next/cache";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
-import { adminDb } from "@/config/firebaseAdmin";
+import { useRouter } from "next/navigation";
 
 export const SignIn = async (data: { email: string, password: string }) => {
     try {
@@ -73,30 +72,31 @@ export const SignUp = async (userData: SignUpParams) => {
             createdAt: new Date(),
         });
 
+        // it's a dwolla server thing to expect the address1, ssn and dateOfBirth
         const dwollaCustomerUrl = await createDwollaCustomer({
-          firstName: profileData.firstName as string,
-          lastName: profileData.lastName as string,
-          email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
           type: "personal",
-          address1: profileData.address as string,
-          city: profileData.city as string, 
-          state: profileData.state as string,
-          postalCode: profileData.postalCode as string,
-          dateOfBirth: profileData.dateofbirth as string,
-          ssn: profileData.SSN as string,
+          address1: userData.address,
+          city: userData.city,
+          state: userData.state.toUpperCase(),
+          postalCode: userData.postalCode,
+          dateOfBirth: userData.dateofbirth,
+          ssn: userData.SSN,
         })
 
         if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer")
 
         const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl)
 
-        const newUserBankRef = await adminDb.collection("dwollaUser").add({
+        await updateDoc(doc(db, "user", newUserAccount.uid), {
           ...profileData,
           email,
           userId: newUserAccount.uid,
           dwollaCustomerId,
           dwollaCustomerUrl,
-          createdAt: new Date(),
+          updatedAt: new Date(),
         });
 
 
@@ -108,25 +108,33 @@ export const SignUp = async (userData: SignUpParams) => {
             user: parseStringify(newUserAccount),
             idToken
         };
-    } catch (error: unknown) {
+      } catch (error: unknown) {
         console.error("[SignUp] Error:", error);
+
+        // 1. Handle Firebase-specific errors
         if (error instanceof FirebaseError) {
-            console.log("[SignUp] Firebase error code:", error.code);
-            switch (error.code) {
-                case "auth/email-already-in-use":
-                    return { error: "This email is already registered. Please sign in." };
-                case "auth/invalid-email":
-                    return { error: "The email address is invalid." };
-                case "auth/weak-password":
-                    return { error: "Password should be at least 6 characters." };
-                default:
-                    return { error: "An unexpected error occurred. Please try again." };
-            }
+          console.log("[SignUp] Firebase error code:", error.code);
+          switch (error.code) {
+            case "auth/email-already-in-use":
+              return { error: "This email is already registered. Please sign in." };
+            case "auth/invalid-email":
+              return { error: "The email address is invalid." };
+            case "auth/weak-password":
+              return { error: "Password should be at least 6 characters." };
+            default:
+              return { error: "An unexpected error occurred. Please try again." };
+          }
         }
 
-        // fallback for non-Firebase errors
+        // 2. Handle Dwolla or other standard Errors
+        if (error instanceof Error) {
+          // This will return "Dwolla Validation: dateOfBirth - DateOfBirth invalid"
+          return { error: error.message };
+        }
+
+        // 3. Absolute fallback
         return { error: "An unknown error occurred." };
-    }
+      }
 };
 
 export const logOutClient = async () => {
@@ -140,26 +148,6 @@ export const logOutClient = async () => {
   }
 }
 
-export const createLinkToken = async (user: User) => {
-  try {
-    const tokenParams = {
-      user: {
-        client_user_id: user.$id
-      },
-      client_name: user.email,
-      products: ['auth', 'transactions', 'identity'] as Products[],
-      country_codes: ['US'] as CountryCode[],
-      language: 'en'
-    }
-
-    const response = await PlaidClient.linkTokenCreate(tokenParams);
-    return parseStringify({ linkToken: response.data.link_token });
-  } catch (error) {
-    console.error('Error creating link token:', error);
-    return { error: 'Unable to create Plaid link token. Please try again.' } as const;
-  }
-}
-
 export const SignInWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
@@ -169,6 +157,16 @@ export const SignInWithGoogle = async () => {
 
     const user = userCredential.user;
 
+    console.log("Available user data:", {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      phoneNumber: user.phoneNumber,
+      providerData: user.providerData
+    });
+
     if (userCredential.operationType === "signIn") {
       const userRef = doc(db, "user", user.uid);
       await setDoc(userRef, {
@@ -177,7 +175,7 @@ export const SignInWithGoogle = async () => {
         lastName: user.displayName?.split(" ")[1] || "",
         createdAt: new Date(),
         // Note: Google OAuth doesn't provide address, SSN, etc. for Dwolla
-        // You may need to prompt the user to complete their profile separately
+        // We need to prompt the user to complete their profile separately
       }, { merge: true });
     }
 
@@ -222,12 +220,15 @@ export const createBankAccount = async ({
       sharableId
     };
 
-    const docRef = await adminDb.collection("bankAccounts").add(data);
-
-    console.log("Bank account created with ID:", docRef.id);
+    const docRef = await setDoc(doc(db, "bankAccounts", bankId), {
+      ...data,
+      createdAt: new Date(),
+    });
+    
+    console.log("Bank account created with ID:", bankId);
 
     const bankAccount = {
-      id: docRef.id,
+      id: bankId,
       ...data
     };
 
@@ -238,10 +239,11 @@ export const createBankAccount = async ({
   }
 }
 
-const exchangePublicToken = async (
+export const exchangePublicToken = async (
   { user, publicToken }: exchangePublicTokenProps
 ) => {
   try {
+    const router = useRouter()
     const result = await PlaidClient.itemPublicTokenExchange({
       public_token: publicToken
     })
@@ -288,8 +290,8 @@ const exchangePublicToken = async (
       sharableId: encryptId(accountData.account_id)
     })
 
-    // revalidate path to reflect changes 
-    revalidatePath("/")
+    // Refresh server-side data
+    router.refresh();
 
     return parseStringify({
       publicTokenMessage: "complete"

@@ -6,7 +6,9 @@ import {
   PlaidLinkOnSuccess,
 } from 'react-plaid-link';
 import { useRouter } from 'next/navigation';
-import { createLinkToken } from '@/lib/user.action';
+import { exchangePublicToken } from '@/lib/user.action';
+import { createLinkToken } from '@/lib/user2.actions';
+
 
 const PlaidLink = ({
   user,
@@ -19,9 +21,9 @@ const PlaidLink = ({
 
   useEffect(() => {
     const getLinkToken = async () => {
-      const data = await createLinkToken(user)
-
-      setToken(data?.link_token)
+      const { link_token } = await createLinkToken(user)
+      console.log("DEBUG: Received Token:", link_token);
+      setToken(link_token as string)
     }
 
     getLinkToken()
@@ -29,10 +31,10 @@ const PlaidLink = ({
 
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(async (public_token: string) => {
-    // await exchangePublicToken({  // a server action
-    //   publicToken: public_token,
-    //   user,
-    // })
+    await exchangePublicToken({  // a server action
+      publicToken: public_token,
+      user,
+    })
 
     router.push("/")
   }, [user])

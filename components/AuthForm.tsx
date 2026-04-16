@@ -52,7 +52,6 @@ const AuthForm = ({
 
         try {
             const { user, idToken, error } = await SignInWithGoogle();
-
             if (error) {
                 setError(error)
                 return
@@ -93,8 +92,20 @@ const AuthForm = ({
         try {
             //sign up with firebase and create a new laid Link
             if (type === "sign-up") {
-                console.log("[AuthForm] Calling SignUp...");
-                const { user, idToken, error } = await SignUp(data);
+                const userData = {
+                    firstName: data.firstName!,
+                    lastName: data.lastName!,
+                    address: data.address!,
+                    postalCode: data.postalCode!,
+                    state: data.state!,
+                    city: data.city!,
+                    dateofbirth: data.dateofbirth!,
+                    email: data.email,
+                    SSN: data.SSN!,
+                    password: data.password
+                }
+
+                const { user, idToken, error } = await SignUp(userData);
                 console.log("[AuthForm] SignUp result - error:", error, "idToken present:", !!idToken);
                     if (error) {
                         setError(error)
@@ -322,8 +333,6 @@ const AuthForm = ({
                                 }
                             </Link>
                         </p>
-                        
-                        
                     </footer>
                 </div>
             </>

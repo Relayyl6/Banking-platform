@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { formSchema } from "@/types/auth.schema";
+import { profileSchema } from "@/app/complete-profile/page";
 // import { formSchema } from './AuthForm'
 
 const authFormSchema = formSchema("sign-up")
 
-interface CustomInputProp {
-    form: UseFormReturn<z.infer<typeof authFormSchema>>,
-    name: FieldPath<z.infer<typeof authFormSchema>>,
+interface CustomInputProp<T  extends z.ZodSchema> {
+    form: UseFormReturn<T>,
+    name: FieldPath<T>,
     label: string,
     placeholder: string,
     required: boolean
@@ -29,7 +30,7 @@ const CustomInputForm = ({
     label,
     placeholder,
     required
-}: CustomInputProp) => {
+}: CustomInputProp<T>) => {
   return (
             <FormField
               control={form.control}

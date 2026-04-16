@@ -10,9 +10,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { updateUserProfileAndDwolla } from '@/lib/profile.actions'
 
-const profileSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+export const profileSchema = z.object({
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
@@ -24,15 +22,14 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>
 
 const CompleteProfile = () => {
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const form = useForm<ProfileFormData>({
+  const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
       address: "",
       city: "",
       state: "",
@@ -59,65 +56,59 @@ const CompleteProfile = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-8">
-        <div>
+    <div className="flex min-h-screen w-full mx-auto items-center justify-center">
+      <div className="w-full max-w-[350px] space-y-8 px-5 gap-5">
+        <div className="">
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
             Complete Your Profile
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 mb-6">
             We need a few more details to set up your banking features.
           </p>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <CustomInputForm
-              control={form.control}
-              name="firstName"
-              label="First Name"
-              placeholder="Enter your first name"
-            />
-            <CustomInputForm
-              control={form.control}
-              name="lastName"
-              label="Last Name"
-              placeholder="Enter your last name"
-            />
-            <CustomInputForm
-              control={form.control}
+              form={form}
               name="address"
               label="Address"
               placeholder="Enter your address"
+              required={true}
             />
             <CustomInputForm
-              control={form.control}
+              form={form}
               name="city"
               label="City"
               placeholder="Enter your city"
+              required={true}
             />
             <CustomInputForm
-              control={form.control}
+              form={form}
               name="state"
               label="State"
               placeholder="Enter your state"
+              required={true}
             />
             <CustomInputForm
-              control={form.control}
+              form={form}
               name="postalCode"
               label="Postal Code"
               placeholder="Enter your postal code"
+              required={true}
             />
             <CustomInputForm
-              control={form.control}
+              form={form}
               name="dateofbirth"
               label="Date of Birth"
               placeholder="YYYY-MM-DD"
+              required={true}
             />
             <CustomInputForm
-              control={form.control}
+              form={form}
               name="SSN"
               label="SSN"
               placeholder="Enter your SSN"
+              required={true}
             />
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="submit" disabled={isLoading} className="w-full">
