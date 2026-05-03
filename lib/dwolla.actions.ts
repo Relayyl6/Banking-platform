@@ -51,15 +51,70 @@ export const createOnDemandAuthorization = async () => {
   }
 };
 
-export const createDwollaCustomer = async (
-  newCustomer: NewDwollaCustomerParams
-) => {
+// lib/actions/dwolla.actions.ts
+
+export const createDwollaCustomer = async (newCustomer: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  dateOfBirth: string;
+  ssn: string;
+}) => {
   try {
-    return await dwollaClient
-      .post("customers", newCustomer)
-      .then((res) => res.headers.get("location"));
-  } catch (err) {
-    console.error("Creating a Dwolla Customer Failed: ", err);
+    console.log("[DEBUG] Creating Dwolla customer with:", {
+      firstName: newCustomer.firstName,
+      lastName: newCustomer.lastName,
+      email: newCustomer.email,
+    });
+
+    // IMPORTANT: Remove `type` field - it's not a valid Dwolla API field
+    const dwollaCustomerData = {
+      firstName: newCustomer.firstName,
+      lastName: newCustomer.lastName,
+      email: newCustomer.email,
+      address1: newCustomer.address1,
+      city: newCustomer.city,
+      state: newCustomer.state,
+      postalCode: newCustomer.postalCode,
+      dateOfBirth: newCustomer.dateOfBirth,
+      ssn: newCustomer.ssn,
+      // type is NOT a valid field for Dwolla customer creation
+    };
+
+    const response = await dwollaClient.post("customers", dwollaCustomerData);
+    const customerUrl = response.headers.get("location");
+    
+    console.log("[DEBUG] Dwolla customer created successfully:", customerUrl);
+    
+    if (!customerUrl) {
+      throw new Error("No customer URL returned from Dwolla");
+    }
+    
+    return customerUrl;
+    
+  } catch (err: any) {
+    console.error("Dwolla API Error:", JSON.stringify(err.body, null, 2));
+
+    // Check if customer already exists
+    if (err.body?.code === 'DuplicateResource') {
+      console.log("[DEBUG] Customer already exists, searching for existing customer...");
+      // You might want to search for existing customer here
+      throw new Error("Dwolla Validation: email - A customer with this email already exists");
+    }
+
+    const dwollaErrors = err.body?._embedded?.errors;
+    if (dwollaErrors && dwollaErrors.length > 0) {
+      const firstError = dwollaErrors[0];
+      const field = firstError.path?.replace("/", "") || "field";
+      const message = firstError.message;
+      throw new Error(`Dwolla Validation: ${field} - ${message}`);
+    }
+
+    throw new Error("An unexpected error occurred with the payment provider.");
   }
 };
 

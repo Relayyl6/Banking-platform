@@ -37,3 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid ID token" }, { status: 401 });
   }
 }
+
+// For a URL like /api/session?type=admin, you access them like this:
+// const { searchParams } = new URL(req.url);
+// const type = searchParams.get('type');

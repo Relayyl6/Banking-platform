@@ -17,6 +17,7 @@ import { getFirebaseErrorMessage } from '@/lib/firebaseError'
 import { FirebaseError } from "firebase/app";
 import { createSessionFromToken } from "@/lib/session.server";
 import PlaidLink from './PlaidLink'
+import PlaidLinkWrapper from './PlaidLinkWrapper'
 
 const AuthForm = ({
     type
@@ -202,7 +203,7 @@ const AuthForm = ({
 
         {user ? (
             <div className="flex flex-col gap-4">
-                <PlaidLink user={user} variant="primary" />
+                <PlaidLinkWrapper user={user} variant='primary' />
             </div>
         ) : (
             <>

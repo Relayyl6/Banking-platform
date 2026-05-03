@@ -17,7 +17,6 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
-import { useRouter } from "next/navigation";
 
 export const SignIn = async (data: { email: string, password: string }) => {
     try {
@@ -52,89 +51,106 @@ export const SignIn = async (data: { email: string, password: string }) => {
 }
 
 export const SignUp = async (userData: SignUpParams) => {
+  const { email, password, ...profileData } = userData;
 
-    const { email, password, ...profileData } = userData;
+  try {
+    console.log("[SignUp] Creating user with email & password...");
 
+    const userCredentials = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    const newUserAccount = userCredentials.user;
+
+    // Step 1: Create user in Firestore first
+    await setDoc(doc(db, "user", newUserAccount.uid), {
+      email,
+      ...profileData,
+      createdAt: new Date(),
+    });
+
+    console.log("[SignUp] User document created in Firestore");
+
+    // Step 2: Create Dwolla customer
+    let dwollaCustomerUrl;
+    let dwollaCustomerId;
+    
     try {
-        console.log("[SignUp] Creating user with email & password...");
+      console.log("[SignUp] Creating Dwolla customer...");
+      
+      dwollaCustomerUrl = await createDwollaCustomer({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        address1: userData.address,
+        city: userData.city,
+        state: userData.state.toUpperCase(),
+        postalCode: userData.postalCode,
+        dateOfBirth: userData.dateofbirth,
+        ssn: userData.SSN,
+        // DO NOT include type: "personal"
+      });
 
-        const userCredentials = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
-
-        const newUserAccount = userCredentials.user;
-
-        await setDoc(doc(db, "user", newUserAccount.uid), {
-            email,
-            ...profileData,
-            createdAt: new Date(),
-        });
-
-        // it's a dwolla server thing to expect the address1, ssn and dateOfBirth
-        const dwollaCustomerUrl = await createDwollaCustomer({
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          type: "personal",
-          address1: userData.address,
-          city: userData.city,
-          state: userData.state.toUpperCase(),
-          postalCode: userData.postalCode,
-          dateOfBirth: userData.dateofbirth,
-          ssn: userData.SSN,
-        })
-
-        if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer")
-
-        const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl)
-
-        await updateDoc(doc(db, "user", newUserAccount.uid), {
-          ...profileData,
-          email,
-          userId: newUserAccount.uid,
-          dwollaCustomerId,
-          dwollaCustomerUrl,
-          updatedAt: new Date(),
-        });
-
-
-        const idToken = await newUserAccount.getIdToken(true);
-
-        console.log("[SignUp] Success: User created and idToken obtained");
-
-        return {
-            user: parseStringify(newUserAccount),
-            idToken
-        };
-      } catch (error: unknown) {
-        console.error("[SignUp] Error:", error);
-
-        // 1. Handle Firebase-specific errors
-        if (error instanceof FirebaseError) {
-          console.log("[SignUp] Firebase error code:", error.code);
-          switch (error.code) {
-            case "auth/email-already-in-use":
-              return { error: "This email is already registered. Please sign in." };
-            case "auth/invalid-email":
-              return { error: "The email address is invalid." };
-            case "auth/weak-password":
-              return { error: "Password should be at least 6 characters." };
-            default:
-              return { error: "An unexpected error occurred. Please try again." };
-          }
-        }
-
-        // 2. Handle Dwolla or other standard Errors
-        if (error instanceof Error) {
-          // This will return "Dwolla Validation: dateOfBirth - DateOfBirth invalid"
-          return { error: error.message };
-        }
-
-        // 3. Absolute fallback
-        return { error: "An unknown error occurred." };
+      if (!dwollaCustomerUrl) {
+        throw new Error("No Dwolla customer URL returned");
       }
+
+      console.log("[SignUp] Dwolla customer URL:", dwollaCustomerUrl);
+      
+      dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
+      console.log("[SignUp] Extracted Dwolla customer ID:", dwollaCustomerId);
+
+    } catch (dwollaError: any) {
+      console.error("[SignUp] Failed to create Dwolla customer:", dwollaError.message);
+      
+      // Return error to user
+      return { error: `Failed to create payment account: ${dwollaError.message}` };
+    }
+
+    // Step 3: Update Firestore with Dwolla info
+    await updateDoc(doc(db, "user", newUserAccount.uid), {
+      dwollaCustomerId,
+      dwollaCustomerUrl,
+      updatedAt: new Date(),
+    });
+
+    console.log("[SignUp] Firestore updated with Dwolla customer info");
+
+    // Step 4: Get ID token
+    const idToken = await newUserAccount.getIdToken(true);
+
+    console.log("[SignUp] Success: User fully created with banking");
+
+    return {
+      user: parseStringify(newUserAccount),
+      idToken
+    };
+    
+  } catch (error: unknown) {
+    console.error("[SignUp] Error:", error);
+
+    if (error instanceof FirebaseError) {
+      console.log("[SignUp] Firebase error code:", error.code);
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          return { error: "This email is already registered. Please sign in." };
+        case "auth/invalid-email":
+          return { error: "The email address is invalid." };
+        case "auth/weak-password":
+          return { error: "Password should be at least 6 characters." };
+        default:
+          return { error: "An unexpected error occurred. Please try again." };
+      }
+    }
+
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+
+    return { error: "An unknown error occurred." };
+  }
 };
 
 export const logOutClient = async () => {
@@ -199,106 +215,5 @@ export const SignInWithGoogle = async () => {
       }
     }
     return { error: "An unknown error occurred during Google sign-in. Please try again." };
-  }
-}
-
-export const createBankAccount = async ({
-  userId,
-  bankId,
-  accountId,
-  accessToken,
-  fundingSourceUrl,
-  sharableId
-}: createBankAccountProps) => {
-  try {
-    const data = {
-      userId,
-      bankId,
-      accountId,
-      accessToken,
-      fundingSourceUrl,
-      sharableId
-    };
-
-    const docRef = await setDoc(doc(db, "bankAccounts", bankId), {
-      ...data,
-      createdAt: new Date(),
-    });
-    
-    console.log("Bank account created with ID:", bankId);
-
-    const bankAccount = {
-      id: bankId,
-      ...data
-    };
-
-    return bankAccount;
-  } catch (error) {
-    console.error("An error occured", error)
-    throw new Error("Unable to save bank account. Please try again.");
-  }
-}
-
-export const exchangePublicToken = async (
-  { user, publicToken }: exchangePublicTokenProps
-) => {
-  try {
-    const router = useRouter()
-    const result = await PlaidClient.itemPublicTokenExchange({
-      public_token: publicToken
-    })
-    
-    const accessToken = result.data.access_token;
-    const itemId = result.data.item_id;
-
-    // get account information from plaid using the access token
-    const accountResponse = await PlaidClient.accountsGet({
-      access_token: accessToken
-    })
-    
-    const accountData = accountResponse.data.accounts[0];
-
-    // create a processor for Dwolla using the same access token and account ID
-    const request: ProcessorTokenCreateRequest = {
-      access_token: accessToken,
-      account_id: accountData.account_id,
-      processor: "dwolla" as ProcessorTokenCreateRequestProcessorEnum
-    }
-
-    const processorTokenResponse = await PlaidClient.processorTokenCreate(request)
-
-    const processorToken = processorTokenResponse.data.processor_token;
-
-
-    // create a funding source for the account using th eDWolla customer ID, Processor Token, and bank name
-    const fundingSourceUrl = await addFundingSource({
-      dwollaCustomerId: user.dwollaCustomerId,
-      processorToken,
-      bankName: accountData.name
-    })
-
-    // if the funding source url is not created, throw a safe error
-    if (!fundingSourceUrl) throw new Error("Funding source creation failed. Please try again.");
-
-    // Create a bank account using the userId, itemID, account ID, accessToken, fundingSourceUrl, and shareableId
-    await createBankAccount({
-      userId: user.$id,
-      bankId: itemId,
-      accountId: accountData.account_id,
-      accessToken,
-      fundingSourceUrl,
-      sharableId: encryptId(accountData.account_id)
-    })
-
-    // Refresh server-side data
-    router.refresh();
-
-    return parseStringify({
-      publicTokenMessage: "complete"
-    })
-
-  } catch (error) {
-    console.error('Error exchanging public token:', error);
-    throw new Error('Unable to exchange Plaid public token. Please try again.');
   }
 }

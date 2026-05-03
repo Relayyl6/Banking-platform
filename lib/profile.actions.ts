@@ -16,8 +16,6 @@ export async function updateUserProfileAndDwolla(profileData: any) {
       return { error: "User not authenticated" }
     }
 
-    // 2. Use adminDb and the Admin SDK syntax (collection/doc)
-    // The Admin SDK does not use the 'doc(db, ...)' syntax from the client SDK
     const userRef = adminDb.collection("user").doc(user.uid);
 
     await userRef.update({
@@ -30,6 +28,11 @@ export async function updateUserProfileAndDwolla(profileData: any) {
     const dwollaCustomerUrl = await createDwollaCustomer({
       email: user.email as string,
       type: "personal",
+      firstName: user.firstName,
+      lastName: user.lastName,
+      address1: profileData.address,
+      ssn: profileData.SSN,
+      dateOfBirth: profileData.dateofbirth,
       ...profileData,
     })
 

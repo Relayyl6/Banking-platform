@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import {
@@ -6,38 +8,47 @@ import {
   PlaidLinkOnSuccess,
 } from 'react-plaid-link';
 import { useRouter } from 'next/navigation';
-import { exchangePublicToken } from '@/lib/user.action';
 import { createLinkToken } from '@/lib/user2.actions';
-
 
 const PlaidLink = ({
   user,
-  variant
+  variant,
+  onExchangeToken
 }: PlaidLinkProps) => {
 
   const router = useRouter()
-  
-  const [ token, setToken ] = useState("")
+  const [token, setToken] = useState("")
 
   useEffect(() => {
     const getLinkToken = async () => {
-      const { link_token } = await createLinkToken(user)
-      console.log("DEBUG: Received Token:", link_token);
-      setToken(link_token as string)
+      try {
+        const { link_token } = await createLinkToken(user)
+        console.log("DEBUG: Received Link Token:", link_token);
+        setToken(link_token as string)
+      } catch (error) {
+        console.error("Error getting link token:", error);
+      }
     }
 
     getLinkToken()
   }, [user]) 
 
-
+  // Fixed: Added all dependencies that are used inside the callback
   const onSuccess = useCallback<PlaidLinkOnSuccess>(async (public_token: string) => {
-    await exchangePublicToken({  // a server action
-      publicToken: public_token,
-      user,
-    })
-
-    router.push("/")
-  }, [user])
+    try {
+      console.log("DEBUG: Plaid Link success, exchanging public token:", public_token);
+      
+      const result = await onExchangeToken({  // a server action
+        publicToken: public_token,
+        user,
+      })
+      
+      console.log("DEBUG: Token exchange result:", result);
+      router.push("/")
+    } catch (error) {
+      console.error("Error exchanging token:", error);
+    }
+  }, [user, onExchangeToken, router]) // Added all dependencies
 
   const config: PlaidLinkOptions = {
     token,
@@ -58,11 +69,17 @@ const PlaidLink = ({
             Connect Bank
           </Button>
         ) : variant === "ghost" ? (
-          <Button>
+          <Button
+            onClick={() => open()}
+            disabled={!ready}
+          >
             Connect Bank
           </Button>
         ) : (
-          <Button>
+          <Button
+            onClick={() => open()}
+            disabled={!ready}
+          >
             Connect Bank
           </Button>
         )
