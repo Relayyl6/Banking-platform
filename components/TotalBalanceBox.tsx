@@ -21,7 +21,7 @@ const TotalBalanceBox = ({
 
           <div className="flex flex-col gap-2 flex-center">
             <p className="text-14 font-medium text-gray-600">
-              Total Current Balance
+              Total Available Balance
             </p>
 
             <div className='flex-center text-24 lg:text-30 flex-1 font-semibold text-gray-900 gap-2'>

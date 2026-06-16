@@ -7,8 +7,8 @@ const Header = ({
     user
 }: HeaderBoxProps) => {
   return (
-    <div className='header-box'>
-        <h1 className="header-box-title">
+    <div className='flex flex-col gap-1'>
+        <h1 className="text-24 lg:text-30 font-semibold text-gray-900">
             {title}
             {type === "greeting" && (
                 <span className="text-bank-gradient">

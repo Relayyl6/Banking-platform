@@ -76,6 +76,7 @@ export const createDwollaCustomer = async (newCustomer: {
       firstName: newCustomer.firstName,
       lastName: newCustomer.lastName,
       email: newCustomer.email,
+      type: "personal",
       address1: newCustomer.address1,
       city: newCustomer.city,
       state: newCustomer.state,
@@ -163,7 +164,45 @@ export const addFundingSource = async ({
       _links: dwollaAuthLinks,
     };
     return await createFundingSource(fundingSourceOptions);
-  } catch (err) {
-    console.error("Transfer fund failed: ", err);
+  } catch (err: any) {
+    console.error("Creating funding source failed: ", err?.message || err);
+    
+    // Handle duplicate resource - extract URL from the error
+    try {
+      // The error body contains the funding source URL
+      if (err?.body) {
+        const errorBody = typeof err.body === 'string' ? JSON.parse(err.body) : err.body;
+        
+        // Check if it's a duplicate resource error
+        if (errorBody?.code === 'DuplicateResource') {
+          const existingUrl = errorBody?._links?.about?.href;
+          if (existingUrl) {
+            console.log("[addFundingSource] Using existing funding source:", existingUrl);
+            return existingUrl;
+          }
+        }
+      }
+      
+      // Also try parsing the error message
+      if (err?.message && typeof err.message === 'string') {
+        try {
+          const parsedMessage = JSON.parse(err.message);
+          if (parsedMessage?.code === 'DuplicateResource') {
+            const existingUrl = parsedMessage?._links?.about?.href;
+            if (existingUrl) {
+              console.log("[addFundingSource] Found URL in error message:", existingUrl);
+              return existingUrl;
+            }
+          }
+        } catch (parseError) {
+          // Not JSON, skip
+        }
+      }
+    } catch (extractError) {
+      console.error("[addFundingSource] Failed to extract URL from error:", extractError);
+    }
+    
+    // If we can't extract the URL, return undefined
+    return undefined;
   }
 };

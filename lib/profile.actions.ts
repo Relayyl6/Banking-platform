@@ -27,7 +27,6 @@ export async function updateUserProfileAndDwolla(profileData: any) {
     // 3. Create Dwolla customer
     const dwollaCustomerUrl = await createDwollaCustomer({
       email: user.email as string,
-      type: "personal",
       firstName: user.firstName,
       lastName: user.lastName,
       address1: profileData.address,

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
 import Footer from './Footer'
+import PlaidLinkWrapper from './PlaidLinkWrapper'
 
 const Sidebar = ({
   user
@@ -51,7 +52,10 @@ const Sidebar = ({
           })
         }
 
-        {/* USER */}
+        <PlaidLinkWrapper
+          user={user}
+          variant="ghost"
+        />
       </nav>
 
       <Footer user={user} type="desktop"/>

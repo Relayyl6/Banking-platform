@@ -235,7 +235,7 @@
 
   /* Bank Info */
   .bank-info {
-    @apply gap-[18px] flex p-4 transition-all border bg-blue-25 border-transparent;
+    @apply gap-4.5 flex p-4 transition-all border bg-blue-25 border-transparent;
   }
 
   /* Category Badge */

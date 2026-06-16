@@ -5,6 +5,7 @@ import { PlaidClient } from "./plaid";
 import { encryptId, parseStringify } from "./utils";
 import { addFundingSource } from "./dwolla.actions";
 import { adminDb } from "@/config/firebaseAdmin";
+import { FieldValue } from 'firebase-admin/firestore';
 
 export const createLinkToken = async (user: User) => {
   try {
@@ -144,6 +145,10 @@ export const exchangePublicToken = async (
   }
 }
 
+// 1. Add the helper function outside so it's ready to use
+const generateAccountNumber = () => {
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+};
 
 export const createBankAccount = async ({
   userId,
@@ -151,30 +156,193 @@ export const createBankAccount = async ({
   accountId,
   accessToken,
   fundingSourceUrl,
-  sharableId
+  sharableId // This is the ugly string
 }: createBankAccountProps) => {
   try {
+    // 2. Generate the clean 10-digit account number for the user
+    const newAccountNumber = generateAccountNumber();
+
+    // 3. Add it to your data object
     const data = {
       userId,
       bankId,
       accountId,
       accessToken,
       fundingSourceUrl,
-      sharableId
+      sharableId,
+      accountNumber: newAccountNumber, // Saves the 10 digits to Firebase
     };
 
-    await adminDb.collection("user").doc(data.userId).collection("banks").add(data);
-    
-    console.log("Bank account created with ID:", bankId);
+    const docRef = await adminDb
+      .collection("user")
+      .doc(data.userId)
+      .collection("banks")
+      .add(data);
+
+    // IMPORTANT: Update the document with its own ID for easier querying
+    await docRef.update({
+      uid: docRef.id,
+      createdAt: FieldValue.serverTimestamp()
+    });
 
     const bankAccount = {
       id: bankId,
+      docId: docRef.id,  // Store the Firestore document ID
       ...data
     };
 
     return parseStringify(bankAccount);
   } catch (error) {
-    console.error("An error occured", error)
+    console.error("[createBankAccount] Error:", error);
     throw new Error("Unable to save bank account. Please try again.");
   }
+};
+
+export const getBanks = async ({userId}: getBanksProps) => {
+  try {
+    if (!userId) throw new Error("userId is required");
+    
+    const banksSnapshot = await adminDb
+      .collection("user")
+      .doc(userId)
+      .collection("banks")
+      .get();
+
+    const banks = banksSnapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    }));
+
+    return parseStringify(banks);
+   } catch (error) {
+    console.error(error)
+  }
 }
+
+export const getBank = async ({ documentId }: getBankProps) => {
+  try {
+    //* Query directly on the `uid` field (each bank doc stores uid === its own doc id)
+    //* instead of loading EVERY bank in the database into memory and .find()-ing it.
+    const bankSnapshot = await adminDb
+      .collectionGroup("banks")
+      .where("uid", "==", documentId)
+      .limit(1)
+      .get();
+
+    if (bankSnapshot.empty) {
+      console.log("[getBank] No bank found with document ID:", documentId);
+      return null;
+    }
+
+    const matchingDoc = bankSnapshot.docs[0];
+
+    const bank = {
+      uid: matchingDoc.id,
+      ...matchingDoc.data()
+    };
+
+    return parseStringify(bank);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps) => {
+  try {
+    // This tells Firestore: ONLY bring back the document that matches this exact ID
+    const bankSnapshot = await adminDb
+      .collectionGroup("banks")
+      .where('accountId', '==', accountId)
+      .limit(1) //* accountId is unique — stop after the first match
+      .get();
+
+    // If the snapshot is empty, the bank doesn't exist
+    if (bankSnapshot.empty) {
+      return null;
+    }
+
+    // Since IDs are unique, we know the first document is our target
+    const matchingDoc = bankSnapshot.docs[0];
+
+    const bank = {
+      uid: matchingDoc.id,
+      ...matchingDoc.data()
+    };
+
+    return parseStringify(bank);
+    
+  } catch (error) {
+    console.error("[getBank] Error fetching bank:", error);
+    return null;
+  }
+};
+
+export const convertSharableId = async (input: string): Promise<string | null> => {
+  try {
+    if (!input) {
+      return null;
+    }
+
+    // Clean up any accidental spaces the user typed
+    const cleanInput = input.trim();
+
+    // Check if it is exactly a 10-digit number
+    const isTenDigits = /^\d{10}$/.test(cleanInput);
+
+    if (isTenDigits) {
+      // SCENARIO 1: User typed the clean 10-digit account number.
+      // We look up the document to find their real, ugly accountId.
+      const snapshot = await adminDb
+        .collectionGroup("banks")
+        .where("accountNumber", "==", cleanInput)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        return null;
+      }
+
+      // Return the real Plaid/Dwolla accountId stored in the database
+      return snapshot.docs[0].data().accountId;
+
+    } else {
+      // SCENARIO 2: Fallback! The user pasted an old Base64 ugly string.
+      try {
+        return atob(cleanInput);
+      } catch (e) {
+        // If atob fails, it means it's already decoded. Just return it.
+        return cleanInput;
+      }
+    }
+  } catch (error) {
+    console.error("[convertSharableId] CRITICAL ERROR resolving ID:", error);
+    return null;
+  }
+};
+
+export const updateBankBalance = async ({
+  userId,
+  documentId,
+  newBalance,
+}: UpdateBankBalanceProps) => {
+  try {
+    // Direct path to the exact document. No searching needed! Fast and efficient.
+    const bankDocRef = adminDb
+      .collection("user")
+      .doc(userId)
+      .collection("banks")
+      .doc(documentId);
+
+    // Update the available balance
+    await bankDocRef.update({
+      availableBalance: newBalance
+    });
+
+    console.log("[updateBankBalance] SUCCESS: Balance updated successfully.");
+    
+    return parseStringify({ success: true, newBalance });
+  } catch (error) {
+    console.error("[updateBankBalance] CRITICAL ERROR updating balance:", error);
+    return null;
+  }
+};

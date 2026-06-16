@@ -2,7 +2,7 @@
 import PlaidLink from './PlaidLink'
 import { exchangePublicToken } from '@/lib/user2.actions'
 
-const PlaidLinkWrapper = ({ user, variant }: { user: User, variant: any }) => {
+const PlaidLinkWrapper = ({ user, variant }: { user: User, variant: 'primary' | 'ghost' }) => {
   return (
     <PlaidLink
       user={user}

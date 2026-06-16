@@ -46,9 +46,10 @@ const CompleteProfile = () => {
       if (result.error) {
         setError(result.error)
       } else {
-        router.push('/') // Redirect to main app
+        router.back() // Redirect back to sign in screen, to make sure to set the User
       }
     } catch (err) {
+      console.log(err)
       setError("Failed to update profile")
     } finally {
       setIsLoading(false)
@@ -62,7 +63,7 @@ const CompleteProfile = () => {
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
             Complete Your Profile
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 mb-6">
+          <p className="mt-2 text-center text-sm text-gray-600">
             We need a few more details to set up your banking features.
           </p>
         </div>

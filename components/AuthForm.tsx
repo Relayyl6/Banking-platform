@@ -15,8 +15,6 @@ import { useRouter } from 'next/navigation'
 import { SignIn, SignInWithGoogle, SignUp } from '@/lib/user.action'
 import { getFirebaseErrorMessage } from '@/lib/firebaseError'
 import { FirebaseError } from "firebase/app";
-import { createSessionFromToken } from "@/lib/session.server";
-import PlaidLink from './PlaidLink'
 import PlaidLinkWrapper from './PlaidLinkWrapper'
 
 const AuthForm = ({

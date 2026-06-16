@@ -2,6 +2,7 @@ import { formatAmount } from '@/lib/utils'
 import Link from 'next/link'
 import React from 'react'
 import Image from 'next/image'
+import Copy from './Copy'
 
 const BankCard = ({
     key,
@@ -10,15 +11,15 @@ const BankCard = ({
     showBalance = true
 }: CreditCardProps) => {
   return (
-    <div className="flex flex-col">
-        <Link className="bank-card" href="/">
+    <div className="flex flex-col" key={key}>
+        <Link className="bank-card" href={`/transaction-history/?id=${account?.firebaseItemId}`}>
             <div className="bank-card-content">
                 <div>
                     <h1 className="text-16 font-semibold text-white tracking-wide">
                         {account.name || userName}
                     </h1>
                     <p className='font-ibm font-black text-white'>
-                        {formatAmount(account.currentBalance)}
+                        {formatAmount(account.availableBalance)}
                     </p>
                 </div>
 
@@ -33,7 +34,7 @@ const BankCard = ({
                     </div>
 
                     <p className="text-14 font-semibold tracking-[1.1px] text-white">
-                        ●●●● ●●●● ●●<span className="text-16">{account.mask}</span>
+                        ●●●● ●●●● ●●●● <span className="text-16">{account.mask}</span>
                     </p>
                 </article>
             </div>
@@ -56,6 +57,10 @@ const BankCard = ({
 
             <Image src="/icons/lines.svg" alt="lines" width={316} height={190} className='absolute top-0 left-0'/>
         </Link>
+
+        {
+            showBalance && <Copy title={account?.sharableId} />
+        }
     </div>
   )
 }

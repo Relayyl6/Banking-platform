@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars */
 
 declare type SearchParamProps = {
-  params: { [key: string]: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ [key: string]: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 // ========================================
@@ -58,27 +58,41 @@ declare type Account = {
   name: string;
   type: string;
   subtype: string;
-  appwriteItemId: string;
+  firebaseItemId: string;
   sharableId: string;
 };
 
+// 1. Define the dependent types first
+declare type FirebaseTimestamp = {
+  _seconds: number;
+  seconds?: number;
+  nanoseconds?: number;
+  toDate: () => Date;
+};
+
+// 2. Define the main type, grouped logically
 declare type Transaction = {
+  // Identifiers
   id: string;
-  uid: string;
-  name: string;
-  paymentChannel: string;
-  type: string;
-  accountId: string;
-  amount: number;
-  pending: boolean;
-  category: string;
-  date: string;
-  image: string;
-  type: string;
-  $createdAt: string;
-  channel: string;
+  accountId?: string;
   senderBankId: string;
   receiverBankId: string;
+
+  // Financial Details
+  amount: number;
+  type: string; // e.g., 'debit' or 'credit'
+  pending?: boolean;
+  
+  // Transaction Metadata
+  name: string;
+  category: string;
+  paymentChannel: string;
+  channel: string; // Note: You might want to combine this with paymentChannel if they do the same thing!
+  image?: string;
+  
+  // Dates
+  date: string; // The formatted ISO string for the frontend
+  createdAt?: FirebaseTimestamp; // The raw database timestamp
 };
 
 declare type Bank = {
@@ -89,6 +103,8 @@ declare type Bank = {
   fundingSourceUrl: string;
   userId: string;
   sharableId: string;
+  accountNumber?: string;
+  availableBalance?: number;
 };
 
 declare type AccountTypes =
@@ -145,7 +161,7 @@ declare interface CreditCardProps {
 
 declare interface BankInfoProps {
   account: Account;
-  appwriteItemId?: string;
+  firebaseItemId?: string;
   type: "full" | "card";
 }
 
@@ -201,7 +217,7 @@ declare interface BankDropdownProps {
 
 declare interface BankTabItemProps {
   account: Account;
-  appwriteItemId?: string;
+  firebaseItemId?: string;
 }
 
 declare interface TotlaBalanceBoxProps {
@@ -227,7 +243,7 @@ declare interface SiderbarProps {
 declare interface RecentTransactionsProps {
   accounts: Account[];
   transactions: Transaction[];
-  appwriteItemId: string;
+  firebaseItemId: string;
   page: number;
 }
 
@@ -238,6 +254,7 @@ declare interface TransactionHistoryTableProps {
 
 declare interface CategoryBadgeProps {
   category: string;
+  color?: string;
 }
 
 declare interface TransactionTableProps {
@@ -262,7 +279,7 @@ declare interface getAccountsProps {
 }
 
 declare interface getAccountProps {
-  appwriteItemId: string;
+  firebaseItemId: string;
 }
 
 declare interface getInstitutionProps {
@@ -325,6 +342,74 @@ declare interface getBankProps {
   documentId: string;
 }
 
+declare interface UpdateBankBalanceProps {
+  userId: string;       // e.g., "o131YotTwFh8eYdp9lVOoAkeeHB2"
+  documentId: string;   // e.g., "Cfod7QwMXFOzK9tc9dF5" (uid)
+  newBalance: number;
+}
+
 declare interface getBankByAccountIdProps {
   accountId: string;
+}
+
+declare interface Account {
+  id: string,
+  availableBalance: number,
+  currentBalance: number,
+  institutionId: string,
+  name: string,
+  officialName: string | null, 
+  mask: string,
+  type: string,
+  subtype: string,
+  firebaseItemId: string,
+  sharableId: string,
+}
+
+declare interface TransactionStatusConfig {
+  processingDays?: number;
+  statusProcessing?: string;
+  statusCompleted?: string;
+  useBusinessDays?: boolean;
+  timezone?: string;
+  normalizeToDate?: boolean;
+}
+
+declare interface FormatAmountConfig {
+  // Currency settings
+  currency?: string;
+  currencyDisplay?: "symbol" | "code" | "name";
+  
+  // Number formatting
+  locale?: string | string[];
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  minimumIntegerDigits?: number;
+  minimumSignificantDigits?: number;
+  maximumSignificantDigits?: number;
+
+  // Style types
+  style?: "currency" | "decimal" | "percent" | "unit";
+  unit?: string;
+  unitDisplay?: "short" | "long" | "narrow";
+
+  // Large number handling
+  notation?: "standard" | "scientific" | "engineering" | "compact";
+  compactDisplay?: "short" | "long";
+
+  // Sign and display
+  signDisplay?: "auto" | "never" | "always" | "exceptZero";
+  roundingMode?: "ceil" | "floor" | "expand" | "halfCeil" | "halfFloor" | "halfEven" | "halfExpand" | "trunc";
+  roundingPriority?: "auto" | "lessPrecision" | "morePrecision";
+  
+  // Input handling
+  handleCents?: boolean;
+  handlePercent?: boolean;
+  fallbackValue?: string;
+  
+  // Special formatting
+  showZeroAsDash?: boolean;
+  hideCurrencySymbol?: boolean;
+  addSpacing?: boolean;
+  useGrouping?: boolean;
 }

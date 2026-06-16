@@ -9,6 +9,7 @@ import {
 } from 'react-plaid-link';
 import { useRouter } from 'next/navigation';
 import { createLinkToken } from '@/lib/user2.actions';
+import Image from 'next/image';
 
 const PlaidLink = ({
   user,
@@ -70,17 +71,32 @@ const PlaidLink = ({
           </Button>
         ) : variant === "ghost" ? (
           <Button
+            variant="ghost"
             onClick={() => open()}
             disabled={!ready}
+            className="flex items-center cursor-pointer gap-3 rounded-lg px-3! py-7! hover:bg-white lg:justify-start"
           >
-            Connect Bank
+            <Image
+              src="/icons/connect-bank.svg"
+              alt="connect-bank "
+              width={24}
+              height={24}
+            />
+            <p className='hidden text-[16px] font-semibold text-black-2 xl:block'>Connect Bank</p>
           </Button>
         ) : (
           <Button
             onClick={() => open()}
             disabled={!ready}
+            className="flex justify-start! cursor-pointer gap-3 rounded-lg bg-transparent! flex-row"
           >
-            Connect Bank
+            <Image
+              src="/icons/connect-bank.svg"
+              alt="connect-bank "
+              width={24}
+              height={24}
+            />
+            <p className='text-[16px] font-semibold text-black-2'>Connect Bank</p>
           </Button>
         )
       }
