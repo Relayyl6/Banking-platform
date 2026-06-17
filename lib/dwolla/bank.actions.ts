@@ -5,7 +5,7 @@ import {
 } from "plaid"; //* removed Transfer* imports — only used by the deleted hardcoded createTransfer
 
 // import { PlaidClient } from "../plaid.config";
-import { parseStringify } from "../utils";
+import { inferCategoryFromName, parseStringify } from "../utils";
 
 // import { getTransactionsByBankId } from "../transaction.actions";
 // import { getBanks, getBank } from "./user2.actions";
@@ -148,9 +148,21 @@ export const getAccount = async ({ firebaseItemId }: getAccountProps) => {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
+    const categorizedTransactions = allTransactions.map((t) => {
+      // If category exists and isn't empty, use it. Otherwise, guess from name.
+      const finalCategory = t.category && t.category !== "" 
+        ? (Array.isArray(t.category) ? t.category[0] : t.category) // Handle Plaid's category arrays
+        : inferCategoryFromName(t.name);
+
+      return {
+        ...t,
+        category: finalCategory
+      };
+    });
+
     return parseStringify({
       data: account,
-      transactions: allTransactions,
+      transactions: categorizedTransactions, // <-- pass the fixed array here
     });
   } catch (error) {
     console.error("An error occurred while getting the account:", error);

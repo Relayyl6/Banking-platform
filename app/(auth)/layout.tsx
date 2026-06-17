@@ -12,10 +12,11 @@ const RootLayout = ({
       <div className='no-scrollbar flex h-screen w-full sticky top-0 items-center justify-end bg-sky-1 max-lg:hidden'>
         <div>
             <Image
-                src="/icons/auth-image.svg"
+                src="/icons/auth-image.png"
                 alt="Auth image"
                 width={500}
                 height={500}
+                className='scale-170 rounded-20'
             />
         </div>
       </div>

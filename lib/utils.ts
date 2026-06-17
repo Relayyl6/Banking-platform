@@ -21,6 +21,22 @@ export function convertTimestamps(obj: any): any {
   return newObj;
 }
 
+export const inferCategoryFromName = (name: string): string => {
+  const lowerName = name.toLowerCase();
+
+  // Define keyword maps for standard Plaid/Bank categories
+  if (lowerName.match(/uber|lyft|delta|airlines|amtrak|mta|transit/)) return "Travel";
+  if (lowerName.match(/mcdonalds|starbucks|doordash|grubhub|chipotle|subway|wendys/)) return "Food and Drink";
+  if (lowerName.match(/amazon|walmart|target|costco|cvs|walgreens/)) return "Shopping";
+  if (lowerName.match(/netflix|spotify|hulu|apple|disney|playstation|xbox/)) return "Entertainment";
+  if (lowerName.match(/zelle|venmo|cash app|paypal|transfer/)) return "Transfer";
+  if (lowerName.match(/chevron|shell|exxon|bp|mobil|gas/)) return "Travel"; // Or "Auto"
+  if (lowerName.match(/planet fitness|gym|equinox/)) return "Personal Care";
+
+  // Default fallback if no keywords match
+  return "Miscellaneous";
+};
+
 // FORMAT DATE TIME
 export const formatDateTime = (dateString: Date) => {
   const dateTimeOptions: Intl.DateTimeFormatOptions = {

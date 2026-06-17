@@ -76,7 +76,59 @@ export const topCategoryStyles = {
     },
     icon: "/icons/coins.svg",
   },
-  default: {
+  Shopping: {
+    bg: "bg-orange-25",
+    circleBg: "bg-orange-100",
+    text: {
+      main: "text-orange-900",
+      count: "text-orange-700",
+    },
+    progress: {
+      bg: "bg-orange-100",
+      indicator: "bg-orange-700",
+    },
+    icon: "/icons/shopping-bag.svg",
+  },
+  Entertainment: {
+    bg: "bg-purple-25",
+    circleBg: "bg-purple-100",
+    text: {
+      main: "text-purple-900",
+      count: "text-purple-700",
+    },
+    progress: {
+      bg: "bg-purple-100",
+      indicator: "bg-purple-700",
+    },
+    icon: "/icons/play.svg", // Replace with your actual icon name if different
+  },
+  Transfer: {
+    bg: "bg-teal-25",
+    circleBg: "bg-teal-100",
+    text: {
+      main: "text-teal-900",
+      count: "text-teal-700",
+    },
+    progress: {
+      bg: "bg-teal-100",
+      indicator: "bg-teal-700",
+    },
+    icon: "/icons/transaction.svg", // Replace with your actual icon name if different
+  },
+  "Personal Care": {
+    bg: "bg-rose-25",
+    circleBg: "bg-rose-100",
+    text: {
+      main: "text-rose-900",
+      count: "text-rose-700",
+    },
+    progress: {
+      bg: "bg-rose-100",
+      indicator: "bg-rose-700",
+    },
+    icon: "/icons/heart.svg", // Replace with your actual icon name if different
+  },
+  Miscellaneous: {
     bg: "bg-pink-25",
     circleBg: "bg-pink-100",
     text: {
@@ -87,7 +139,7 @@ export const topCategoryStyles = {
       bg: "bg-pink-100",
       indicator: "bg-pink-700",
     },
-    icon: "/icons/shopping-bag.svg",
+    icon: "/icons/receipt.svg", // Updated to free up shopping-bag for the Shopping category
   },
 };
 

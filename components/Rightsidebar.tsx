@@ -3,6 +3,8 @@ import Link from 'next/link'
 import React from 'react'
 import BankCard from './BankCard'
 import { HoverCardDemo } from './HoverCard'
+import { countTransactionCategories } from '@/lib/utils'
+import { Category } from './Category'
 
 
 const RightSidebar = ({
@@ -10,6 +12,10 @@ const RightSidebar = ({
   transactions,
   banks
 }: RightSidebarProps) => {
+
+  const categories: CategoryCount[] = countTransactionCategories(transactions);
+
+  console.log(categories)
   return (
     <aside className="no-scrollbar hidden h-screen max-h-screen flex-col border-l border-gray-200 xl:flex w-[355px] xl:overflow-y-scroll important!">
       <section className="flex flex-col pb-8!">
@@ -74,8 +80,16 @@ const RightSidebar = ({
           )
         }
 
-        <div className="">
+        <div className='h-px w-full bg-gray-700 mb-0' />
 
+        <div className="mt-10 flex flex-1 flex-col gap-6">
+          <h2 className='text-18 font-semibold text-gray-900'>Top Categories</h2>
+
+          <div className='space-y-5'>
+            {categories.map((c, i) => (
+              <Category key={c.name} category={c} />
+            ))}
+          </div>
         </div>
       </section>
     </aside>
